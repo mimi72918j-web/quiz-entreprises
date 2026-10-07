@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Challenge — Classification des entreprises</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(135deg,#17152b,#34205f);color:#fff;min-height:100vh}
+.container{width:min(900px,92%);margin:auto;padding:30px 0}.card{background:rgba(255,255,255,.10);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+h1{font-size:clamp(28px,6vw,48px);margin:0 0 10px}.subtitle{opacity:.8;margin-bottom:24px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap}.badge{padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.13);font-weight:700}
+.progress{height:10px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden;margin:15px 0 25px}.bar{height:100%;width:0;background:#fff;transition:.3s}
+.question{font-size:clamp(21px,4vw,30px);line-height:1.25;margin:20px 0 24px;font-weight:800}
+.answers{display:grid;gap:12px}.answer{width:100%;border:0;border-radius:16px;padding:16px;text-align:left;background:rgba(255,255,255,.12);color:#fff;font-size:17px;font-weight:700;cursor:pointer;transition:.2s}.answer:hover{transform:translateY(-2px);background:rgba(255,255,255,.20)}.answer.correct{background:#1f9d62}.answer.wrong{background:#c94158}.answer.disabled{cursor:default}
+.feedback{margin-top:18px;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.10);line-height:1.5;display:none}.feedback.show{display:block}
+.timer{font-size:22px;font-weight:900}.timer.warning{animation:pulse .7s infinite}@keyframes pulse{50%{opacity:.45}}
+button.next,.start,.restart{margin-top:20px;border:0;border-radius:14px;padding:14px 22px;font-size:16px;font-weight:800;cursor:pointer;background:#fff;color:#24183d}
+.hidden{display:none!important}.result{text-align:center}.score{font-size:64px;font-weight:900;margin:10px 0}.small{opacity:.75}.high{font-size:24px;font-weight:800}
+@media(max-width:600px){.card{padding:20px}.answer{font-size:16px;padding:14px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="startScreen" class="card">
+    <h1>🎯 Challenge — Classification des entreprises</h1>
+    <p class="subtitle">15 questions difficiles • 20 secondes par question • 4 choix</p>
+    <p>Teste tes connaissances sur la définition, les secteurs, la taille, l'effectif, le chiffre d'affaires et la valeur ajoutée.</p>
+    <button class="start" onclick="startQuiz()">Commencer le challenge 🚀</button>
+  </div>
+
+  <div id="quizScreen" class="card hidden">
+    <div class="top">
+      <span id="counter" class="badge">Question 1 / 15</span>
+      <span id="scoreBadge" class="badge">Score : 0</span>
+      <span id="timer" class="timer">20s</span>
+    </div>
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <div id="question" class="question"></div>
+    <div id="answers" class="answers"></div>
+    <div id="feedback" class="feedback"></div>
+    <button id="nextBtn" class="next hidden" onclick="nextQuestion()">Question suivante →</button>
+  </div>
+
+  <div id="resultScreen" class="card result hidden">
+    <h1>🏆 Résultat</h1>
+    <div id="score" class="score">0/15</div>
+    <div id="percent" class="high">0%</div>
+    <p id="message" class="subtitle"></p>
+    <button class="restart" onclick="restartQuiz()">Recommencer 🔄</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+ {q:"Une entreprise est principalement une organisation qui…",a:["produit des biens ou services pour répondre à des besoins","fonctionne uniquement grâce aux subventions","ne cherche jamais à réaliser de résultat","appartient obligatoirement à l'État"],c:0,e:"L'entreprise combine des ressources pour produire des biens ou services destinés à satisfaire des besoins."},
+ {q:"Laquelle appartient au secteur primaire ?",a:["Une banque","Une exploitation agricole","Une usine automobile","Une agence de communication"],c:1,e:"Le secteur primaire exploite directement les ressources naturelles : agriculture, pêche, élevage, extraction…"},
+ {q:"La transformation du minerai en métal relève principalement du…",a:["secteur primaire","secteur secondaire","secteur tertiaire","secteur financier uniquement"],c:1,e:"Le secteur secondaire transforme les matières premières en produits fabriqués."},
+ {q:"Lequel est un exemple typique du secteur tertiaire ?",a:["Pêche","Agriculture","Transport de voyageurs","Extraction de pétrole"],c:2,e:"Le tertiaire regroupe principalement les activités de services, comme le transport, le commerce, la banque ou l'assurance."},
+ {q:"Selon les seuils utilisés dans votre cours, une entreprise de 7 salariés est classée comme…",a:["PME","ETI","microentreprise","grande entreprise"],c:2,e:"Dans cet exercice : 1–9 salariés = microentreprise."},
+ {q:"Selon ces mêmes seuils, une entreprise de 180 salariés appartient à la catégorie…",a:["microentreprise","PME","ETI","grande entreprise"],c:1,e:"Dans cet exercice : 10–249 salariés = PME."},
+ {q:"Une entreprise compte 320 salariés. Quelle conclusion est correcte selon les seuils du cours ?",a:["Elle est une microentreprise","Elle est une PME","Elle est une grande entreprise","Son effectif ne permet jamais de la classer"],c:2,e:"À partir de 250 salariés, on parle ici de grande entreprise."},
+ {q:"Le chiffre d'affaires correspond principalement…",a:["à la valeur totale des ventes réalisées sur une période","au nombre de salariés","aux bénéfices uniquement","à la valeur des machines"],c:0,e:"Le chiffre d'affaires mesure le montant des ventes réalisées sur une période donnée."},
+ {q:"Quelle formule correspond à la valeur ajoutée ?",a:["VA = Production + consommations intermédiaires","VA = Production − consommations intermédiaires","VA = CA − nombre de salariés","VA = bénéfice × effectif"],c:1,e:"VA = Production − consommations intermédiaires."},
+ {q:"Si la production est de 900 000 DH et les consommations intermédiaires de 350 000 DH, la VA est de…",a:["550 000 DH","1 250 000 DH","350 000 DH","900 350 DH"],c:0,e:"900 000 − 350 000 = 550 000 DH."},
+ {q:"Pourquoi utilise-t-on plusieurs indicateurs pour apprécier la dimension d'une entreprise ?",a:["Parce qu'un seul indicateur ne décrit pas toujours toute sa dimension","Parce que le nombre de salariés est toujours inutile","Parce que le CA ne peut jamais être calculé","Parce que toutes les entreprises ont la même structure"],c:0,e:"L'effectif, le chiffre d'affaires et la valeur ajoutée donnent des informations complémentaires."},
+ {q:"Deux entreprises ont le même effectif, mais l'une réalise un chiffre d'affaires beaucoup plus élevé. Que peut-on dire ?",a:["Elles ont forcément exactement la même dimension économique","Le CA peut révéler une activité économique plus importante pour l'une des deux","L'effectif devient nul","La valeur ajoutée est forcément identique"],c:1,e:"Le chiffre d'affaires apporte une information complémentaire à l'effectif sur l'importance de l'activité."},
+ {q:"Une entreprise qui transforme des matières premières en produits finis appartient principalement au…",a:["secteur primaire","secteur secondaire","secteur tertiaire","secteur domestique"],c:1,e:"La transformation industrielle relève du secteur secondaire."},
+ {q:"Quelle affirmation est la plus correcte concernant les seuils de taille ?",a:["Ils sont absolument identiques dans tous les pays","Ils peuvent varier selon le pays ou l'organisme utilisé","Ils dépendent uniquement du logo de l'entreprise","Ils sont toujours basés uniquement sur le CA"],c:1,e:"Les seuils de classement peuvent varier selon les pays, institutions et méthodes."},
+ {q:"Une entreprise réalise une production de 2 000 000 DH avec 1 200 000 DH de consommations intermédiaires. Quelle est sa valeur ajoutée ?",a:["800 000 DH","1 200 000 DH","3 200 000 DH","2 000 000 DH"],c:0,e:"VA = 2 000 000 − 1 200 000 = 800 000 DH."}
+];
+
+let current=0, score=0, time=20, timer;
+
+function startQuiz(){current=0;score=0;document.getElementById('startScreen').classList.add('hidden');document.getElementById('resultScreen').classList.add('hidden');document.getElementById('quizScreen').classList.remove('hidden');showQuestion();}
+function showQuestion(){
+ clearInterval(timer); time=20;
+ const q=questions[current];
+ document.getElementById('counter').textContent=`Question ${current+1} / ${questions.length}`;
+ document.getElementById('scoreBadge').textContent=`Score : ${score}`;
+ document.getElementById('timer').textContent=`${time}s`;
+ document.getElementById('timer').classList.remove('warning');
+ document.getElementById('bar').style.width=`${current/questions.length*100}%`;
+ document.getElementById('question').textContent=q.q;
+ const answers=document.getElementById('answers'); answers.innerHTML='';
+ q.a.forEach((ans,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=`${String.fromCharCode(65+i)}. ${ans}`;b.onclick=()=>selectAnswer(i,b);answers.appendChild(b);});
+ document.getElementById('feedback').className='feedback';
+ document.getElementById('nextBtn').classList.add('hidden');
+ timer=setInterval(()=>{time--;document.getElementById('timer').textContent=`${time}s`;if(time<=5)document.getElementById('timer').classList.add('warning');if(time<=0){clearInterval(timer);selectAnswer(-1,null);}},1000);
+}
+function selectAnswer(choice,clicked){
+ clearInterval(timer);
+ const q=questions[current];
+ document.querySelectorAll('.answer').forEach((b,i)=>{b.classList.add('disabled');b.disabled=true;if(i===q.c)b.classList.add('correct');});
+ const feedback=document.getElementById('feedback');
+ if(choice===q.c){score++;if(clicked)clicked.classList.add('correct');feedback.innerHTML=`✅ <b>Bonne réponse !</b><br>${q.e}`;}
+ else {if(clicked)clicked.classList.add('wrong');feedback.innerHTML=`❌ <b>Mauvaise réponse.</b><br>${q.e}`;}
+ feedback.classList.add('show');document.getElementById('scoreBadge').textContent=`Score : ${score}`;
+ document.getElementById('nextBtn').textContent=current===questions.length-1?'Voir mon résultat 🏆':'Question suivante →';
+ document.getElementById('nextBtn').classList.remove('hidden');
+}
+function nextQuestion(){current++;if(current<questions.length)showQuestion();else showResult();}
+function showResult(){
+ document.getElementById('quizScreen').classList.add('hidden');document.getElementById('resultScreen').classList.remove('hidden');
+ const pct=Math.round(score/questions.length*100);
+ document.getElementById('score').textContent=`${score}/${questions.length}`;
+ document.getElementById('percent').textContent=`${pct}%`;
+ document.getElementById('message').textContent=pct>=90?'🔥 Excellent ! Tu maîtrises très bien le chapitre.':pct>=70?'👏 Très bon résultat ! Encore quelques détails à revoir.':pct>=50?'💪 Pas mal ! Une petite révision peut faire la différence.':'📚 Il faut encore réviser les notions clés avant l’examen.';
+}
+function restartQuiz(){document.getElementById('resultScreen').classList.add('hidden');document.getElementById('quizScreen').classList.remove('hidden');startQuiz();}
+</script>
+</body>
+</html>
